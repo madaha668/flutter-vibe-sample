@@ -43,3 +43,4 @@ coverage/
 
 # Miscellaneous
 .DS_Store
+._*
