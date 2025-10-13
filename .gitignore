@@ -1,0 +1,45 @@
+# Flutter/Dart tool directories and files
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+
+# Generated build artifacts
+build/
+**/build/
+
+# IDE and editor directories
+.idea/
+.vscode/
+*.iml
+
+# Android-specific
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/*.keystore
+android/app/*.jks
+
+# iOS/macOS-specific
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Generated.xcconfig
+ios/Flutter/AppFrameworkInfo.plist
+ios/Pods/
+ios/.symlinks/
+ios/Runner/GeneratedPluginRegistrant.*
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Platform caches
+linux/Flutter/ephemeral/
+windows/Flutter/ephemeral/
+
+# Flutter web
+web/.dart_tool/
+
+# Coverage reports
+coverage/
+
+# Miscellaneous
+.DS_Store
