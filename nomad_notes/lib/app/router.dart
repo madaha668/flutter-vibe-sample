@@ -10,17 +10,12 @@ import '../features/auth/presentation/sign_up_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/splash/presentation/splash_page.dart';
 
-// Create a notifier that will refresh the router
-final _routerNotifierProvider = ChangeNotifierProvider<GoRouterNotifier>((ref) {
-  return GoRouterNotifier(ref);
-});
-
 final routerProvider = Provider<GoRouter>((ref) {
-  final notifier = ref.watch(_routerNotifierProvider);
-
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: SplashPage.routePath,
-    refreshListenable: notifier,
+    refreshListenable: GoRouterRefreshNotifier(
+      ref.read(authControllerProvider.notifier),
+    ),
     redirect: (context, state) {
       final authState = ref.read(authControllerProvider);
       final status = authState.status;
@@ -71,28 +66,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(router.dispose);
+
+  return router;
 });
 
-class GoRouterNotifier extends ChangeNotifier {
-  GoRouterNotifier(this._ref) {
-    // Poll auth state changes
-    _timer = Timer.periodic(const Duration(milliseconds: 200), (_) {
-      final newStatus = _ref.read(authControllerProvider).status;
-      if (newStatus != _lastStatus) {
-        _lastStatus = newStatus;
-        notifyListeners();
-      }
+/// A ChangeNotifier that listens to auth state changes via StateNotifier's stream
+class GoRouterRefreshNotifier extends ChangeNotifier {
+  GoRouterRefreshNotifier(AuthController authController) {
+    // StateNotifier has a .stream property that emits state changes
+    _subscription = authController.stream.listen((_) {
+      notifyListeners();
     });
-    _lastStatus = _ref.read(authControllerProvider).status;
   }
 
-  final Ref _ref;
-  Timer? _timer;
-  AuthStatus? _lastStatus;
+  late final StreamSubscription<AuthState> _subscription;
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _subscription.cancel();
     super.dispose();
   }
 }
