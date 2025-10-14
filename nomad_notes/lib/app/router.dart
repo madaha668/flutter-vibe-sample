@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,12 +11,47 @@ import '../features/home/presentation/home_page.dart';
 import '../features/splash/presentation/splash_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final notifier = ref.watch(_routerNotifierProvider);
+  final notifier = ValueNotifier<int>(0);
 
-  return GoRouter(
+  // Listen to auth changes and trigger router refresh
+  ref.listen<AuthState>(
+    authControllerProvider,
+    (previous, next) {
+      // Increment value to trigger GoRouter refresh
+      notifier.value++;
+    },
+  );
+
+  final router = GoRouter(
     initialLocation: SplashPage.routePath,
     refreshListenable: notifier,
-    redirect: notifier.handleRedirect,
+    redirect: (context, state) {
+      final authState = ref.read(authControllerProvider);
+      final status = authState.status;
+      final location = state.matchedLocation;
+
+      final onSplash = location == SplashPage.routePath;
+      final onAuthStack = location.startsWith('/auth');
+
+      if (status == AuthStatus.unknown || authState.isLoading) {
+        return onSplash ? null : SplashPage.routePath;
+      }
+
+      if (status == AuthStatus.signedOut) {
+        if (onAuthStack) {
+          return null;
+        }
+        return SignInPage.routePath;
+      }
+
+      if (status == AuthStatus.signedIn) {
+        if (onAuthStack || onSplash) {
+          return HomePage.routePath;
+        }
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: SplashPage.routePath,
@@ -38,57 +75,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(() {
+    router.dispose();
+    notifier.dispose();
+  });
+
+  return router;
 });
-
-final _routerNotifierProvider = Provider<RouterNotifier>((ref) {
-  final notifier = RouterNotifier(ref);
-  ref.onDispose(notifier.dispose);
-  return notifier;
-});
-
-class RouterNotifier extends ChangeNotifier {
-  RouterNotifier(this._ref) {
-    _subscription = _ref.listen<AuthState>(
-      authControllerProvider,
-      (_, __) => notifyListeners(),
-      fireImmediately: true,
-    );
-  }
-
-  final Ref _ref;
-  late final ProviderSubscription<AuthState> _subscription;
-
-  @override
-  void dispose() {
-    _subscription.close();
-    super.dispose();
-  }
-
-  String? handleRedirect(BuildContext context, GoRouterState state) {
-    final authState = _ref.read(authControllerProvider);
-    final status = authState.status;
-    final location = state.matchedLocation;
-
-    final onSplash = location == SplashPage.routePath;
-    final onAuthStack = location.startsWith('/auth');
-
-    if (status == AuthStatus.unknown || authState.isLoading) {
-      return onSplash ? null : SplashPage.routePath;
-    }
-
-    if (status == AuthStatus.signedOut) {
-      if (onAuthStack) {
-        return null;
-      }
-      return SignInPage.routePath;
-    }
-
-    if (status == AuthStatus.signedIn) {
-      if (onAuthStack || onSplash) {
-        return HomePage.routePath;
-      }
-    }
-
-    return null;
-  }
-}

@@ -167,6 +167,18 @@ class AuthController extends StateNotifier<AuthState> {
 
 String _messageFromError(Object error) {
   if (error is DioException) {
+    // Network error (no response from server)
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'Connection timeout. Please check your internet connection.';
+    }
+
+    if (error.type == DioExceptionType.connectionError) {
+      return 'Cannot connect to server. Please check if the backend is running at ${error.requestOptions.baseUrl}';
+    }
+
+    // Server responded with error
     final detail = error.response?.data;
     if (detail is Map<String, dynamic>) {
       if (detail['detail'] is String) {
@@ -180,11 +192,21 @@ String _messageFromError(Object error) {
         return firstEntry.value.first.toString();
       }
     }
+
     if (error.response?.statusCode == 400) {
       return 'Invalid request. Please check your details.';
     }
+
+    if (error.response?.statusCode != null) {
+      return 'Server error (${error.response!.statusCode}). Please try again.';
+    }
+
+    // Unknown DioException
+    return 'Network error: ${error.message ?? error.type.name}';
   }
-  return 'Something went wrong. Please try again.';
+
+  // Non-Dio error
+  return 'Something went wrong: ${error.toString()}';
 }
 
 final authControllerProvider =
