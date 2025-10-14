@@ -12,7 +12,7 @@ uv run python manage.py migrate
 uv run python manage.py runserver 0.0.0.0:8000
 
 # or use Docker (requires Docker Compose v2 or docker-compose)
-# rebuild the image and start the backend with SQLite stored on a named volume
+# backend SQLite data is stored under ./sqlite-data on the host
 docker compose build backend   # or: docker-compose build backend
 docker compose up backend      # add -d to run detached
 
@@ -43,3 +43,9 @@ Copy `.env.example` to `.env` and adjust as needed. SQLite is used by default; s
 - psycopg for PostgreSQL connectivity
 
 Optional dev extras (`uv sync --group dev`) install Ruff and Pytest-Django.
+
+### CORS
+
+Set `CORS_ALLOW_ALL_ORIGINS=True` (default when `DJANGO_DEBUG` is true) or provide
+explicit `CORS_ALLOWED_ORIGINS` / `CORS_ALLOWED_ORIGIN_REGEXES` values if you need
+to limit access to specific Flutter web dev ports.

@@ -12,8 +12,9 @@ services:
       - DATABASE_URL=sqlite:////data/nomad.sqlite3
       - ACCESS_TOKEN_MINUTES=15
       - REFRESH_TOKEN_DAYS=7
+      - CORS_ALLOW_ALL_ORIGINS=True
     volumes:
-      - sqlite-data:/data
+      - $PWD/sqlite-data:/data
     restart: unless-stopped
 
   db:
@@ -23,7 +24,7 @@ services:
       - POSTGRES_USER=nomad
       - POSTGRES_PASSWORD=nomad
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - $PWD/postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -32,7 +33,3 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
-volumes:
-  postgres-data:
-  sqlite-data:

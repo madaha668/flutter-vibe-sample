@@ -17,12 +17,14 @@ class SignUpPage extends ConsumerStatefulWidget {
 
 class _SignUpPageState extends ConsumerState<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
+    _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -36,8 +38,9 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     }
 
     await ref.read(authControllerProvider.notifier).signUp(
-          _emailController.text.trim(),
-          _passwordController.text,
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          fullName: _fullNameController.text.trim(),
         );
   }
 
@@ -59,6 +62,21 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  TextFormField(
+                    controller: _fullNameController,
+                    enabled: !isLoading,
+                    decoration: const InputDecoration(
+                      labelText: 'Full name',
+                    ),
+                    autofillHints: const [AutofillHints.name],
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Enter your name';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
                     enabled: !isLoading,

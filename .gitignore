@@ -45,6 +45,8 @@ coverage/
 .DS_Store
 ._*
 backend/db.sqlite3
+sqlite-data/
+postgres-data/
 
 # python
 .venv/
