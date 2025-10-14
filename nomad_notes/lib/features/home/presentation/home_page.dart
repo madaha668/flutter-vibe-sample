@@ -16,26 +16,21 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final notesState = ref.watch(notesControllerProvider);
+
+    // Listen for error messages and show snackbar
     ref.listen<NotesState>(
       notesControllerProvider,
       (previous, next) {
         if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(next.errorMessage!)),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.errorMessage!)),
+          );
         }
       },
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authControllerProvider);
-    final notesState = ref.watch(notesControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
