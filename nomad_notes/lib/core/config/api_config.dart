@@ -4,14 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Provides the base URL for the backend API depending on the current platform.
+///
+/// Default network configuration:
+/// - All platforms now connect to backend at 10.0.56.2:8000
+/// - Override with: flutter run --dart-define=NOMAD_API_URL=http://your-ip:8000
 final apiBaseUrlProvider = Provider<String>((ref) {
-  if (kIsWeb) {
-    return const String.fromEnvironment('NOMAD_API_URL', defaultValue: 'http://localhost:8000');
+  // Check for environment override first
+  const envUrl = String.fromEnvironment('NOMAD_API_URL');
+  if (envUrl.isNotEmpty) {
+    return envUrl;
   }
 
-  if (Platform.isAndroid) {
-    return const String.fromEnvironment('NOMAD_API_URL', defaultValue: 'http://10.0.2.2:8000');
-  }
-
-  return const String.fromEnvironment('NOMAD_API_URL', defaultValue: 'http://127.0.0.1:8000');
+  // Default to network backend server
+  return 'http://10.0.56.2:8000';
 });
