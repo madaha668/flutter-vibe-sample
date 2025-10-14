@@ -10,19 +10,15 @@ import '../features/auth/presentation/sign_up_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/splash/presentation/splash_page.dart';
 
+// Create a notifier that will refresh the router
+final _routerNotifierProvider = ChangeNotifierProvider<GoRouterNotifier>((ref) {
+  return GoRouterNotifier(ref);
+});
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final notifier = ValueNotifier<int>(0);
+  final notifier = ref.watch(_routerNotifierProvider);
 
-  // Listen to auth changes and trigger router refresh
-  ref.listen<AuthState>(
-    authControllerProvider,
-    (previous, next) {
-      // Increment value to trigger GoRouter refresh
-      notifier.value++;
-    },
-  );
-
-  final router = GoRouter(
+  return GoRouter(
     initialLocation: SplashPage.routePath,
     refreshListenable: notifier,
     redirect: (context, state) {
@@ -75,11 +71,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-
-  ref.onDispose(() {
-    router.dispose();
-    notifier.dispose();
-  });
-
-  return router;
 });
+
+class GoRouterNotifier extends ChangeNotifier {
+  GoRouterNotifier(this._ref) {
+    // Poll auth state changes
+    _timer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+      final newStatus = _ref.read(authControllerProvider).status;
+      if (newStatus != _lastStatus) {
+        _lastStatus = newStatus;
+        notifyListeners();
+      }
+    });
+    _lastStatus = _ref.read(authControllerProvider).status;
+  }
+
+  final Ref _ref;
+  Timer? _timer;
+  AuthStatus? _lastStatus;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+}

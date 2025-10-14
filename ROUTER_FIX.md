@@ -1,4 +1,4 @@
-# Router Fix for Riverpod 2.x Compatibility
+# Router Fix for Riverpod 2.x + go_router 14.x Compatibility
 
 ## Problem
 
@@ -13,74 +13,77 @@ debugDoingBuild
 
 ## Root Cause
 
-In Riverpod 2.x, `ref.listen()` can only be called within specific contexts:
-- Inside a provider's build function (the callback passed to `Provider()`, `StateNotifier Provider()`, etc.)
-- Inside the `build()` method of a `ConsumerWidget` or `ConsumerStatefulWidget`
-
-The original code was calling `ref.listen()` inside a `RouterNotifier` class constructor, which is not an allowed context.
+In Riverpod 2.x with go_router 14.x, there's a complex interaction issue:
+1. `ref.listen()` can only be called in specific contexts (Provider build function or ConsumerWidget build method)
+2. When go_router evaluates the `redirect` callback, it internally checks if we're in a valid build context
+3. Even though we call `ref.listen()` in the Provider's build function, go_router's internal checks fail
+4. This is because go_router's `Builder` widget triggers the check before we're fully in a ConsumerWidget context
 
 ## Solution
 
-Changed the router setup from using a separate `RouterNotifier` class to using `ref.listen()` directly within the `routerProvider`'s build function:
+Since `ref.listen()` triggers go_router's internal assertion checks, we use a polling-based approach instead:
 
-### Before (Broken):
+### Final Working Solution:
 ```dart
+// Separate ChangeNotifierProvider to avoid assertion issues
+final _routerNotifierProvider = ChangeNotifierProvider<GoRouterNotifier>((ref) {
+  return GoRouterNotifier(ref);
+});
+
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ref.watch(_routerNotifierProvider);
+
   return GoRouter(
-    refreshListenable: notifier,
-    // ...
+    initialLocation: SplashPage.routePath,
+    refreshListenable: notifier,  // ✅ Clean separation
+    redirect: (context, state) {
+      final authState = ref.read(authControllerProvider);
+      // ... handle redirects based on auth status
+    },
+    routes: [/* ... */],
   );
 });
 
-class RouterNotifier extends ChangeNotifier {
-  RouterNotifier(this._ref) {
-    _subscription = _ref.listen<AuthState>(  // ❌ NOT ALLOWED
-      authControllerProvider,
-      (_, __) => notifyListeners(),
-    );
+class GoRouterNotifier extends ChangeNotifier {
+  GoRouterNotifier(this._ref) {
+    // Poll auth state changes (avoids ref.listen assertion)
+    _timer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+      final newStatus = _ref.read(authControllerProvider).status;
+      if (newStatus != _lastStatus) {
+        _lastStatus = newStatus;
+        notifyListeners();  // Triggers GoRouter refresh
+      }
+    });
+    _lastStatus = _ref.read(authControllerProvider).status;
+  }
+
+  final Ref _ref;
+  Timer? _timer;
+  AuthStatus? _lastStatus;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 }
 ```
 
-### After (Fixed):
-```dart
-final routerProvider = Provider<GoRouter>((ref) {
-  final notifier = ValueNotifier<int>(0);
-
-  // ✅ ref.listen called directly in provider build function
-  ref.listen<AuthState>(
-    authControllerProvider,
-    (previous, next) {
-      notifier.value++; // Trigger GoRouter refresh
-    },
-  );
-
-  final router = GoRouter(
-    refreshListenable: notifier,
-    redirect: (context, state) {
-      final authState = ref.read(authControllerProvider);
-      // ... handle redirects
-    },
-    routes: [/* ... */],
-  );
-
-  ref.onDispose(() {
-    router.dispose();
-    notifier.dispose();
-  });
-
-  return router;
-});
-```
-
 ## How It Works
 
-1. A `ValueNotifier<int>` is created to act as a simple listenable for GoRouter
-2. `ref.listen()` is called within the provider's build function (allowed in Riverpod 2.x)
-3. When auth state changes, the notifier's value is incremented
-4. GoRouter detects the change in `refreshListenable` and re-evaluates redirects
-5. The `redirect` callback reads the current auth state and determines routing
+1. `GoRouterNotifier` extends `ChangeNotifier` and polls auth status every 200ms
+2. When auth status changes (unknown → signedOut → signedIn), it calls `notifyListeners()`
+3. GoRouter's `refreshListenable` detects the change and re-evaluates the `redirect` callback
+4. The `redirect` callback reads current auth state using `ref.read()` (allowed)
+5. Proper cleanup with timer cancellation on dispose
+
+## Why Polling Instead of ref.listen?
+
+- ✅ **Avoids Riverpod assertion errors** - No ref.listen in problematic contexts
+- ✅ **Works with go_router's internal checks** - Doesn't trigger Builder assertions
+- ✅ **Simple and predictable** - Clear separation of concerns
+- ✅ **Performant** - 200ms polling is negligible, only triggers on actual status changes
+- ✅ **Proper cleanup** - Timer cancelled when provider disposed
 
 ## Benefits
 
