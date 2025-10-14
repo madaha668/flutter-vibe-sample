@@ -14,7 +14,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
-    ALLOWED_HOSTS=(list[str], []),
 )
 
 environ.Env.read_env(BASE_DIR / '.env', overwrite=False)
@@ -23,7 +22,7 @@ environ.Env.read_env(BASE_DIR / '.env', overwrite=False)
 # Application secrets and host config
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='nomad-notes-insecure-secret')
 DEBUG = env('DJANGO_DEBUG')
-ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 
 # Application definition
