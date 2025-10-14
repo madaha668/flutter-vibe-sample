@@ -10,6 +10,14 @@ uv sync
 # apply migrations and start the API
 uv run python manage.py migrate
 uv run python manage.py runserver 0.0.0.0:8000
+
+# or use Docker (requires Docker Compose v2 or docker-compose)
+# rebuild the image and start the backend with SQLite stored on a named volume
+docker compose build backend   # or: docker-compose build backend
+docker compose up backend      # add -d to run detached
+
+# run both backend and Postgres
+docker compose up              # builds as needed and starts all services
 ```
 
 ## API endpoints

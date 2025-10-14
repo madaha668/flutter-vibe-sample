@@ -44,9 +44,10 @@ coverage/
 # Miscellaneous
 .DS_Store
 ._*
-.venv/
-backend/.venv/
+backend/db.sqlite3
 
 # python
+.venv/
+backend/.venv/
 __pycache__/
 *.egg-info/

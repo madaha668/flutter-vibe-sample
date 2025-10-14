@@ -24,6 +24,10 @@ dev = [
 [tool.uv]
 package = true
 
+[tool.setuptools.packages.find]
+include = ["nomad_backend*", "apps*"]
+exclude = ["static*", "tests*"]
+
 [tool.uv.pip]
 index-url = "https://pypi.org/simple"
 
