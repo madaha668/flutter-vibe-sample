@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir uv
 
 # Copy project metadata for dependency resolution
 COPY pyproject.toml uv.lock /app/
-#COPY entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 
 # Sync dependencies (system packages may be needed for psycopg)
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential libpq-dev && \
@@ -22,12 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 
 # Copy application code
 COPY . /app
-#RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Create directory for static if needed
 RUN mkdir -p /app/static /data
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uv", "run", "gunicorn", "nomad_backend.wsgi:application", "--bind", "0.0.0.0:8000"]
