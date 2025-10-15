@@ -18,6 +18,8 @@ class ApiClient {
   private refreshSubscribers: Array<(token: string) => void> = [];
 
   constructor() {
+    console.log('[API Client] Initializing with baseURL:', API_BASE_URL);
+
     this.client = axios.create({
       baseURL: API_BASE_URL,
       timeout: 10000,
@@ -33,19 +35,42 @@ class ApiClient {
     // Request interceptor: Inject access token
     this.client.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
+        console.log('[API Client] Making request:', {
+          method: config.method?.toUpperCase(),
+          url: config.url,
+          baseURL: config.baseURL,
+          fullURL: `${config.baseURL}${config.url}`,
+        });
+
         const token = await secureStorage.getAccessToken();
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => {
+        console.error('[API Client] Request error:', error);
+        return Promise.reject(error);
+      }
     );
 
     // Response interceptor: Handle 401 and auto-refresh
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        console.log('[API Client] Response received:', {
+          status: response.status,
+          url: response.config.url,
+        });
+        return response;
+      },
       async (error: AxiosError) => {
+        console.error('[API Client] Response error:', {
+          message: error.message,
+          code: error.code,
+          status: error.response?.status,
+          url: error.config?.url,
+          responseData: error.response?.data,
+        });
         const originalRequest = error.config as InternalAxiosRequestConfig & {
           _retry?: boolean;
         };
