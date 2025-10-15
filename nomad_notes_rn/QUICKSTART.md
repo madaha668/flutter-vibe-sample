@@ -11,7 +11,43 @@ Before starting, ensure you have:
 - [ ] **Backend running** at accessible IP (e.g., `http://10.0.56.2:8000`)
 - [ ] **iOS Simulator** (macOS with Xcode) OR **Android Emulator** (Android Studio)
 
-## Step 1: Install Dependencies
+## Important: Where to Run Commands
+
+### Two-Host Setup (Your Configuration)
+
+If backend runs on **separate host** (e.g., backend on `10.0.56.2`, development on `10.0.56.1`):
+
+**Backend Host (10.0.56.2):**
+```bash
+# Only run the backend
+cd backend
+docker compose up
+```
+
+**Development Host (10.0.56.1):**
+```bash
+# Run all React Native commands here
+cd nomad_notes_rn
+npm install
+npm run ios  # or android
+```
+
+### Single-Host Setup
+
+If backend and development are on **same machine**:
+
+```bash
+# Terminal 1: Start backend
+cd backend
+docker compose up
+
+# Terminal 2: Run React Native app
+cd nomad_notes_rn
+npm install
+npm run ios  # or android
+```
+
+## Step 1: Install Dependencies (On Development Host)
 
 ```bash
 cd nomad_notes_rn
@@ -19,6 +55,8 @@ npm install
 ```
 
 **Expected output:** Dependencies installed without errors (~2 minutes)
+
+**Note:** This should be run on the machine where you'll run simulators/emulators, NOT necessarily where the backend runs.
 
 ## Step 2: Find Your Backend IP
 

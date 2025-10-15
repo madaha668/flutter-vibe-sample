@@ -31,41 +31,55 @@ flutter-vibe-sample/
 
 ## Quick Start
 
-### 1. Install Dependencies
+### Setup Depends on Your Configuration
+
+#### Option A: Single Host (Backend + Development on Same Machine)
 
 ```bash
+# 1. Start backend
+cd backend
+docker compose up
+
+# 2. Find your network IP (in another terminal)
+ifconfig | grep "inet " | grep -v 127.0.0.1
+# Example output: inet 10.0.56.2
+
+# 3. Install React Native dependencies
+cd ../nomad_notes_rn
+npm install
+
+# 4. Run on iOS Simulator
+NOMAD_API_URL=http://10.0.56.2:8000 npm run ios
+
+# OR run on Android Emulator
+NOMAD_API_URL=http://10.0.56.2:8000 npm run android
+```
+
+#### Option B: Separate Hosts (Your Setup - Backend on 10.0.56.2, Development on 10.0.56.1)
+
+**On Backend Host (10.0.56.2):**
+```bash
+# Start backend only
+cd backend
+docker compose up
+
+# Backend is now accessible at http://10.0.56.2:8000
+```
+
+**On Development Host (10.0.56.1):**
+```bash
+# 1. Install React Native dependencies
 cd nomad_notes_rn
 npm install
-```
 
-### 2. Start Backend
+# 2. Verify backend is accessible
+curl http://10.0.56.2:8000/api/docs/
+# Should return HTML
 
-```bash
-cd ../backend
-docker compose up
-```
-
-### 3. Find Your Network IP
-
-```bash
-# macOS/Linux
-ifconfig | grep "inet " | grep -v 127.0.0.1
-
-# Use the IP shown (e.g., 10.0.56.2)
-```
-
-### 4. Run on iOS Simulator (macOS only)
-
-```bash
-cd ../nomad_notes_rn
+# 3. Run on iOS Simulator (macOS only)
 NOMAD_API_URL=http://10.0.56.2:8000 npm run ios
-```
 
-### 5. Run on Android Emulator
-
-```bash
-# Start emulator first via Android Studio
-# Then:
+# OR run on Android Emulator
 NOMAD_API_URL=http://10.0.56.2:8000 npm run android
 ```
 
