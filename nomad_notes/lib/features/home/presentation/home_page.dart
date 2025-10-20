@@ -190,48 +190,30 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                       const SizedBox(height: 12),
                     ],
-                    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
-                      // On desktop, show single button for file picker
-                      Center(
-                        child: ElevatedButton.icon(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        TextButton.icon(
                           onPressed: isSubmitting
                               ? null
                               : () async {
                                   try {
-                                    const typeGroup = XTypeGroup(
-                                      label: 'images',
-                                      extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-                                    );
-                                    final file = await openFile(
-                                      acceptedTypeGroups: [typeGroup],
-                                    );
-                                    if (file != null) {
-                                      setState(() {
-                                        selectedImage = File(file.path);
-                                      });
-                                    }
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Error: ${e.toString()}')),
+                                    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+                                      // On desktop, use file picker for "camera"
+                                      const typeGroup = XTypeGroup(
+                                        label: 'images',
+                                        extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
                                       );
-                                    }
-                                  }
-                                },
-                          icon: const Icon(Icons.add_photo_alternate),
-                          label: const Text('Choose Image'),
-                        ),
-                      )
-                    else
-                      // On mobile (iOS/Android), show camera and gallery buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          TextButton.icon(
-                            onPressed: isSubmitting
-                                ? null
-                                : () async {
-                                    try {
+                                      final file = await openFile(
+                                        acceptedTypeGroups: [typeGroup],
+                                      );
+                                      if (file != null) {
+                                        setState(() {
+                                          selectedImage = File(file.path);
+                                        });
+                                      }
+                                    } else {
+                                      // On mobile, use actual camera
                                       final image = await imagePicker.pickImage(
                                         source: ImageSource.camera,
                                       );
@@ -240,22 +222,39 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           selectedImage = File(image.path);
                                         });
                                       }
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Camera error: $e')),
-                                        );
-                                      }
                                     }
-                                  },
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text('Camera'),
-                          ),
-                          TextButton.icon(
-                            onPressed: isSubmitting
-                                ? null
-                                : () async {
-                                    try {
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Camera'),
+                        ),
+                        TextButton.icon(
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  try {
+                                    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+                                      // On desktop, use file picker
+                                      const typeGroup = XTypeGroup(
+                                        label: 'images',
+                                        extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+                                      );
+                                      final file = await openFile(
+                                        acceptedTypeGroups: [typeGroup],
+                                      );
+                                      if (file != null) {
+                                        setState(() {
+                                          selectedImage = File(file.path);
+                                        });
+                                      }
+                                    } else {
+                                      // On mobile, use gallery
                                       final image = await imagePicker.pickImage(
                                         source: ImageSource.gallery,
                                       );
@@ -264,19 +263,20 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           selectedImage = File(image.path);
                                         });
                                       }
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Gallery error: $e')),
-                                        );
-                                      }
                                     }
-                                  },
-                            icon: const Icon(Icons.photo_library),
-                            label: const Text('Gallery'),
-                          ),
-                        ],
-                      ),
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.photo_library),
+                          label: const Text('Gallery'),
+                        ),
+                      ],
+                    ),
                     if (errorText != null) ...[
                       const SizedBox(height: 12),
                       Align(
