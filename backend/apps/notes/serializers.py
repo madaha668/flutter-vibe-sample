@@ -51,3 +51,13 @@ class NoteSerializer(serializers.ModelSerializer):
         model = Note
         fields = ('id', 'title', 'body', 'created_at', 'updated_at', 'image', 'image_file')
         read_only_fields = ('id', 'created_at', 'updated_at', 'image')
+
+    def create(self, validated_data):
+        # Remove image_file from validated_data before creating Note
+        validated_data.pop('image_file', None)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Remove image_file from validated_data before updating Note
+        validated_data.pop('image_file', None)
+        return super().update(instance, validated_data)
