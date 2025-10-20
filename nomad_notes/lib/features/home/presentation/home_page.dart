@@ -190,8 +190,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                       const SizedBox(height: 12),
                     ],
-                    if (Platform.isMacOS)
-                      // On macOS, show single button for file picker
+                    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
+                      // On desktop, show single button for file picker
                       Center(
                         child: ElevatedButton.icon(
                           onPressed: isSubmitting
@@ -223,7 +223,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         ),
                       )
                     else
-                      // On mobile, show camera and gallery buttons
+                      // On mobile (iOS/Android), show camera and gallery buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
