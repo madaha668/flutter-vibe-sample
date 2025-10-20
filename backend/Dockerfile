@@ -15,8 +15,9 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml uv.lock /app/
 COPY entrypoint.sh /entrypoint.sh
 
-# Sync dependencies (system packages may be needed for psycopg)
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential libpq-dev && \
+# Sync dependencies (system packages may be needed for psycopg and Tesseract)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev tesseract-ocr libtesseract-dev && \
     uv sync --frozen --no-dev && \
     apt-get purge -y build-essential && apt-get auto-remove -y && rm -rf /var/lib/apt/lists/*
 
@@ -24,8 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 COPY . /app
 RUN chmod +x /entrypoint.sh
 
-# Create directory for static if needed
-RUN mkdir -p /app/static /data
+# Create directories for static and media files
+RUN mkdir -p /app/static /app/media /data
 
 EXPOSE 8000
 

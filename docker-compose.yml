@@ -15,6 +15,7 @@ services:
       - CORS_ALLOW_ALL_ORIGINS=True
     volumes:
       - $PWD/sqlite-data:/data
+      - $PWD/media:/app/media
     restart: unless-stopped
 
   db:

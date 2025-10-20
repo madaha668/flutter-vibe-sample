@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/application/auth_controller.dart';
@@ -69,7 +71,11 @@ class NotesController extends StateNotifier<NotesState> {
     }
   }
 
-  Future<bool> create({required String title, required String body}) async {
+  Future<bool> create({
+    required String title,
+    required String body,
+    File? imageFile,
+  }) async {
     final tokens = _ref.read(authControllerProvider).tokens;
     if (tokens == null) {
       return false;
@@ -80,6 +86,7 @@ class NotesController extends StateNotifier<NotesState> {
         accessToken: tokens.access,
         title: title,
         body: body,
+        imageFile: imageFile,
       );
       state = state.copyWith(notes: [note, ...state.notes], clearError: true);
       return true;

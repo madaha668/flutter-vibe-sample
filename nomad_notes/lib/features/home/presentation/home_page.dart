@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../auth/application/auth_controller.dart';
 import '../../notes/application/notes_controller.dart';
@@ -79,12 +82,28 @@ class _HomePageState extends ConsumerState<HomePage> {
                 final note = notesState.notes[index];
                 return Card(
                   child: ListTile(
+                    leading: note.image != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.network(
+                              note.image!.imageUrl,
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.image),
+                            ),
+                          )
+                        : null,
                     title: Text(note.title),
                     subtitle: Text(
                       note.body.isEmpty ? 'No content' : note.body,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    trailing: note.image != null
+                        ? const Icon(Icons.photo_library, size: 16)
+                        : null,
+                    onTap: () => _showNoteDetailDialog(context, note),
                   ),
                 );
               },
@@ -105,42 +124,116 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _showCreateNoteDialog(BuildContext context) async {
     final titleController = TextEditingController();
     final bodyController = TextEditingController();
+    final imagePicker = ImagePicker();
 
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         bool isSubmitting = false;
         String? errorText;
+        File? selectedImage;
 
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('New note'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Title'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: bodyController,
-                    decoration: const InputDecoration(labelText: 'Body'),
-                    minLines: 3,
-                    maxLines: 5,
-                  ),
-                  if (errorText != null) ...[
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        errorText!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
-                      ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title'),
                     ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: bodyController,
+                      decoration: const InputDecoration(labelText: 'Body'),
+                      minLines: 3,
+                      maxLines: 5,
+                    ),
+                    const SizedBox(height: 16),
+                    if (selectedImage != null) ...[
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              selectedImage!,
+                              height: 150,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: IconButton.filled(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () {
+                                setState(() {
+                                  selectedImage = null;
+                                });
+                              },
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.black54,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        TextButton.icon(
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  final image = await imagePicker.pickImage(
+                                    source: ImageSource.camera,
+                                  );
+                                  if (image != null) {
+                                    setState(() {
+                                      selectedImage = File(image.path);
+                                    });
+                                  }
+                                },
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Camera'),
+                        ),
+                        TextButton.icon(
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  final image = await imagePicker.pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (image != null) {
+                                    setState(() {
+                                      selectedImage = File(image.path);
+                                    });
+                                  }
+                                },
+                          icon: const Icon(Icons.photo_library),
+                          label: const Text('Gallery'),
+                        ),
+                      ],
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          errorText!,
+                          style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -171,7 +264,11 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                           final success = await ref
                               .read(notesControllerProvider.notifier)
-                              .create(title: title, body: body);
+                              .create(
+                                title: title,
+                                body: body,
+                                imageFile: selectedImage,
+                              );
 
                           if (!mounted || !dialogContext.mounted) return;
 
@@ -206,5 +303,99 @@ class _HomePageState extends ConsumerState<HomePage> {
         const SnackBar(content: Text('Note added.')),
       );
     }
+  }
+
+  Future<void> _showNoteDetailDialog(BuildContext context, note) async {
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(note.title),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (note.image != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      note.image!.imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 64),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (note.image!.analysisStatus == 'completed') ...[
+                    if (note.image!.ocrText.isNotEmpty) ...[
+                      const Text(
+                        'Extracted Text:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(note.image!.ocrText),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (note.image!.objectLabels.isNotEmpty) ...[
+                      const Text(
+                        'Detected Objects:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: note.image!.objectLabels
+                            .map<Widget>((label) => Chip(
+                                  label: Text(label),
+                                  visualDensity: VisualDensity.compact,
+                                ))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ] else if (note.image!.analysisStatus == 'processing') ...[
+                    const Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Analyzing image...'),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+                if (note.body.isNotEmpty) ...[
+                  const Text(
+                    'Note:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(note.body),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
