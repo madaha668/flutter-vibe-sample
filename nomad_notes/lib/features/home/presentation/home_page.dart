@@ -192,32 +192,30 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        if (Platform.isIOS || Platform.isAndroid) ...[
-                          TextButton.icon(
-                            onPressed: isSubmitting
-                                ? null
-                                : () async {
-                                    try {
-                                      final image = await imagePicker.pickImage(
-                                        source: ImageSource.camera,
-                                      );
-                                      if (image != null) {
-                                        setState(() {
-                                          selectedImage = File(image.path);
-                                        });
-                                      }
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Camera error: $e')),
-                                        );
-                                      }
+                        TextButton.icon(
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  try {
+                                    final image = await imagePicker.pickImage(
+                                      source: ImageSource.camera,
+                                    );
+                                    if (image != null) {
+                                      setState(() {
+                                        selectedImage = File(image.path);
+                                      });
                                     }
-                                  },
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text('Camera'),
-                          ),
-                        ],
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Camera not available: ${e.toString()}')),
+                                      );
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Camera'),
+                        ),
                         TextButton.icon(
                           onPressed: isSubmitting
                               ? null
