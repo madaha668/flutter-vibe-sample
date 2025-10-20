@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -189,59 +190,93 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                       const SizedBox(height: 12),
                     ],
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        TextButton.icon(
+                    if (Platform.isMacOS)
+                      // On macOS, show single button for file picker
+                      Center(
+                        child: ElevatedButton.icon(
                           onPressed: isSubmitting
                               ? null
                               : () async {
                                   try {
-                                    final image = await imagePicker.pickImage(
-                                      source: ImageSource.camera,
+                                    const typeGroup = XTypeGroup(
+                                      label: 'images',
+                                      extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
                                     );
-                                    if (image != null) {
+                                    final file = await openFile(
+                                      acceptedTypeGroups: [typeGroup],
+                                    );
+                                    if (file != null) {
                                       setState(() {
-                                        selectedImage = File(image.path);
+                                        selectedImage = File(file.path);
                                       });
                                     }
                                   } catch (e) {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Camera not available: ${e.toString()}')),
+                                        SnackBar(content: Text('Error: ${e.toString()}')),
                                       );
                                     }
                                   }
                                 },
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Camera'),
+                          icon: const Icon(Icons.add_photo_alternate),
+                          label: const Text('Choose Image'),
                         ),
-                        TextButton.icon(
-                          onPressed: isSubmitting
-                              ? null
-                              : () async {
-                                  try {
-                                    final image = await imagePicker.pickImage(
-                                      source: ImageSource.gallery,
-                                    );
-                                    if (image != null) {
-                                      setState(() {
-                                        selectedImage = File(image.path);
-                                      });
-                                    }
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Gallery error: $e')),
+                      )
+                    else
+                      // On mobile, show camera and gallery buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton.icon(
+                            onPressed: isSubmitting
+                                ? null
+                                : () async {
+                                    try {
+                                      final image = await imagePicker.pickImage(
+                                        source: ImageSource.camera,
                                       );
+                                      if (image != null) {
+                                        setState(() {
+                                          selectedImage = File(image.path);
+                                        });
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Camera error: $e')),
+                                        );
+                                      }
                                     }
-                                  }
-                                },
-                          icon: const Icon(Icons.photo_library),
-                          label: Text(Platform.isMacOS ? 'Choose Image' : 'Gallery'),
-                        ),
-                      ],
-                    ),
+                                  },
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Camera'),
+                          ),
+                          TextButton.icon(
+                            onPressed: isSubmitting
+                                ? null
+                                : () async {
+                                    try {
+                                      final image = await imagePicker.pickImage(
+                                        source: ImageSource.gallery,
+                                      );
+                                      if (image != null) {
+                                        setState(() {
+                                          selectedImage = File(image.path);
+                                        });
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Gallery error: $e')),
+                                        );
+                                      }
+                                    }
+                                  },
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Gallery'),
+                          ),
+                        ],
+                      ),
                     if (errorText != null) ...[
                       const SizedBox(height: 12),
                       Align(
