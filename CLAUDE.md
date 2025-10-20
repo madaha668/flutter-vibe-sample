@@ -5,9 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 Nomad Notes is a full-stack mobile application consisting of:
-- **Flutter mobile app** (`nomad_notes/`) - Cross-platform iOS/Android note-taking client
-- **Django REST backend** (`backend/`) - API server with JWT authentication
+- **Flutter mobile app** (`nomad_notes/`) - Cross-platform iOS/Android note-taking client with **visual notes support**
+- **Django REST backend** (`backend/`) - API server with JWT authentication, **OCR, and image analysis**
 - **Docker Compose** setup for local development
+
+### Recent Features
+
+- **Visual Notes** (`VISUAL_NOTES_IMPLEMENTATION.md`): Photo attachments with OCR text extraction and object detection
+- **Docker Commands** (`DOCKER_COMMANDS.md`): Reference for running Django commands in containers
 
 ## Architecture
 
