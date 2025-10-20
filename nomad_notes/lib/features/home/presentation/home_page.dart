@@ -154,34 +154,38 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                     const SizedBox(height: 16),
                     if (selectedImage != null) ...[
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              selectedImage!,
-                              height: 150,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: IconButton.filled(
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () {
-                                setState(() {
-                                  selectedImage = null;
-                                });
-                              },
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.black54,
-                                foregroundColor: Colors.white,
+                      SizedBox(
+                        height: 150,
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                selectedImage!,
+                                height: 150,
+                                fit: BoxFit.cover,
                               ),
                             ),
-                          ),
-                        ],
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: IconButton.filled(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedImage = null;
+                                  });
+                                },
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.black54,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.all(4),
+                                  minimumSize: const Size(32, 32),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -317,13 +321,18 @@ class _HomePageState extends ConsumerState<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (note.image != null) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      note.image!.imageUrl,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 64),
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        note.image!.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.broken_image, size: 64),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
