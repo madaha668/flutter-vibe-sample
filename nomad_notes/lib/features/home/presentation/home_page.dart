@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../auth/application/auth_controller.dart';
 import '../../notes/application/notes_controller.dart';
+import 'camera_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -199,21 +200,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                               : () async {
                                   try {
                                     if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
-                                      // On desktop, use file picker for "camera"
-                                      const typeGroup = XTypeGroup(
-                                        label: 'images',
-                                        extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+                                      // On desktop, open camera page
+                                      final File? capturedImage = await Navigator.of(context).push<File>(
+                                        MaterialPageRoute(
+                                          builder: (context) => const CameraPage(),
+                                        ),
                                       );
-                                      final file = await openFile(
-                                        acceptedTypeGroups: [typeGroup],
-                                      );
-                                      if (file != null) {
+                                      if (capturedImage != null) {
                                         setState(() {
-                                          selectedImage = File(file.path);
+                                          selectedImage = capturedImage;
                                         });
                                       }
                                     } else {
-                                      // On mobile, use actual camera
+                                      // On mobile, use image_picker camera
                                       final image = await imagePicker.pickImage(
                                         source: ImageSource.camera,
                                       );
@@ -226,7 +225,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   } catch (e) {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Error: $e')),
+                                        SnackBar(content: Text('Camera error: $e')),
                                       );
                                     }
                                   }
