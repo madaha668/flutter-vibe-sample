@@ -16,5 +16,5 @@ final apiBaseUrlProvider = Provider<String>((ref) {
   }
 
   // Default to network backend server
-  return 'http://10.0.56.2:8000';
+  return 'http://192.168.66.238:8000';
 });
