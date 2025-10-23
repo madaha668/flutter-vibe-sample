@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
+import '../../../core/config/api_config.dart';
 import '../../../core/network/api_client.dart';
 import '../../auth/data/auth_repository.dart';
 import '../domain/note.dart';

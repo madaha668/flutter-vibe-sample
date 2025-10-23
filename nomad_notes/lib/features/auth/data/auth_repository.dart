@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../core/config/api_config.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/auth_models.dart';
 
