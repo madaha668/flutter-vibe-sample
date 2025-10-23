@@ -53,3 +53,6 @@ postgres-data/
 backend/.venv/
 __pycache__/
 *.egg-info/
+
+# backend media directory
+media/
