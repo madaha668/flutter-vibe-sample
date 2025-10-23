@@ -1,4 +1,6 @@
-import 'package:dio/dio.dart';
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod/riverpod.dart';
 
@@ -65,8 +67,8 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final user = await _repository.me(accessToken: tokens.access);
       _setSignedIn(user: user, tokens: tokens);
-    } on DioException catch (error) {
-      if (error.response?.statusCode == 401) {
+    } on HttpException catch (error) {
+      if (error.statusCode == 401) {
         await _attemptRefresh(tokens);
       } else {
         await _tokenStorage.clear();
@@ -167,46 +169,49 @@ class AuthController extends StateNotifier<AuthState> {
 }
 
 String _messageFromError(Object error) {
-  if (error is DioException) {
-    // Network error (no response from server)
-    if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.sendTimeout ||
-        error.type == DioExceptionType.receiveTimeout) {
-      return 'Connection timeout. Please check your internet connection.';
-    }
-
-    if (error.type == DioExceptionType.connectionError) {
-      return 'Cannot connect to server. Please check if the backend is running at ${error.requestOptions.baseUrl}';
-    }
-
-    // Server responded with error
-    final detail = error.response?.data;
-    if (detail is Map<String, dynamic>) {
-      if (detail['detail'] is String) {
-        return detail['detail'] as String;
+  if (error is HttpException) {
+    // HTTP error with response
+    try {
+      final data = error.body;
+      if (data.isNotEmpty) {
+        // Try to parse as JSON
+        final json = Uri.decodeComponent(data);
+        if (json.contains('detail')) {
+          // Extract detail field if present
+          final detailMatch = RegExp(r'"detail"\s*:\s*"([^"]*)"').firstMatch(json);
+          if (detailMatch != null) {
+            return detailMatch.group(1) ?? 'Server error';
+          }
+        }
       }
-      final firstEntry = detail.entries.firstWhere(
-        (_) => true,
-        orElse: () => MapEntry('', ''),
-      );
-      if (firstEntry.value is List && firstEntry.value.isNotEmpty) {
-        return firstEntry.value.first.toString();
-      }
+    } catch (_) {
+      // Fall through to generic message
     }
 
-    if (error.response?.statusCode == 400) {
+    if (error.statusCode == 400) {
       return 'Invalid request. Please check your details.';
     }
 
-    if (error.response?.statusCode != null) {
-      return 'Server error (${error.response!.statusCode}). Please try again.';
+    if (error.statusCode == 401) {
+      return 'Invalid credentials. Please check your email and password.';
     }
 
-    // Unknown DioException
-    return 'Network error: ${error.message ?? error.type.name}';
+    if (error.statusCode >= 500) {
+      return 'Server error (${error.statusCode}). Please try again later.';
+    }
+
+    return 'Request failed (${error.statusCode}). Please try again.';
   }
 
-  // Non-Dio error
+  if (error is SocketException) {
+    return 'Cannot connect to server. Please check if the backend is running and your network connection.';
+  }
+
+  if (error is TimeoutException) {
+    return 'Connection timeout. Please check your internet connection.';
+  }
+
+  // Unknown error
   return 'Something went wrong: ${error.toString()}';
 }
 

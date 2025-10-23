@@ -1,24 +1,34 @@
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../auth/data/auth_repository.dart';
 import '../domain/note.dart';
 
 class NotesRepository {
-  NotesRepository(this._dio);
+  NotesRepository(this._client, this._baseUrl);
 
-  final Dio _dio;
+  final http.Client _client;
+  final String _baseUrl;
+
+  String get _apiBase => '$_baseUrl/api';
 
   Future<List<Note>> fetchNotes(String accessToken) async {
-    final response = await _dio.get<List<dynamic>>(
-      '/notes/',
-      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    final url = Uri.parse('$_apiBase/notes/');
+    final response = await _client.get(
+      url,
+      headers: {'Authorization': 'Bearer $accessToken'},
     );
 
-    final data = response.data ?? const [];
+    if (response.statusCode != 200) {
+      throw HttpException(response.statusCode, response.body);
+    }
+
+    final data = jsonDecode(response.body) as List<dynamic>;
     return data.map((item) => Note.fromJson(item as Map<String, dynamic>)).toList();
   }
 
@@ -28,40 +38,54 @@ class NotesRepository {
     required String body,
     File? imageFile,
   }) async {
-    FormData formData;
+    final url = Uri.parse('$_apiBase/notes/');
 
     if (imageFile != null) {
-      // Create multipart form data with image
+      // Create multipart request for image upload
+      final request = http.MultipartRequest('POST', url)
+        ..headers['Authorization'] = 'Bearer $accessToken'
+        ..fields['title'] = title
+        ..fields['body'] = body;
+
       final fileName = imageFile.path.split('/').last;
       final mimeType = _getMimeType(fileName);
 
-      formData = FormData.fromMap({
-        'title': title,
-        'body': body,
-        'image_file': await MultipartFile.fromFile(
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image_file',
           imageFile.path,
-          filename: fileName,
           contentType: MediaType.parse(mimeType),
         ),
-      });
+      );
+
+      final streamedResponse = await _client.send(request);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw HttpException(response.statusCode, response.body);
+      }
+
+      return Note.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     } else {
-      // Regular JSON payload
-      formData = FormData.fromMap({
-        'title': title,
-        'body': body,
-      });
+      // Regular JSON request
+      final response = await _client.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'title': title,
+          'body': body,
+        }),
+      );
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw HttpException(response.statusCode, response.body);
+      }
+
+      return Note.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     }
-
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/notes/',
-      data: formData,
-      options: Options(
-        headers: {'Authorization': 'Bearer $accessToken'},
-        contentType: 'multipart/form-data',
-      ),
-    );
-
-    return Note.fromJson(response.data!);
   }
 
   String _getMimeType(String fileName) {
@@ -83,6 +107,7 @@ class NotesRepository {
 }
 
 final notesRepositoryProvider = Provider<NotesRepository>((ref) {
-  final dio = ref.watch(dioProvider);
-  return NotesRepository(dio);
+  final client = ref.watch(httpClientProvider);
+  final baseUrl = ref.watch(apiBaseUrlProvider);
+  return NotesRepository(client, baseUrl);
 });

@@ -1,24 +1,35 @@
-import 'package:dio/dio.dart';
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../core/network/api_client.dart';
 import '../domain/auth_models.dart';
 
 class AuthRepository {
-  AuthRepository(this._dio);
+  AuthRepository(this._client, this._baseUrl);
 
-  final Dio _dio;
+  final http.Client _client;
+  final String _baseUrl;
+
+  String get _apiBase => '$_baseUrl/api';
 
   Future<AuthSession> signIn({required String email, required String password}) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/auth/signin/',
-      data: {
+    final url = Uri.parse('$_apiBase/auth/signin/');
+    final response = await _client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
         'email': email,
         'password': password,
-      },
+      }),
     );
 
-    final data = response.data!;
+    if (response.statusCode != 200) {
+      throw HttpException(response.statusCode, response.body);
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     return AuthSession(
       tokens: AuthTokens(
         access: data['access'] as String,
@@ -33,16 +44,22 @@ class AuthRepository {
     required String password,
     required String fullName,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/auth/signup/',
-      data: {
+    final url = Uri.parse('$_apiBase/auth/signup/');
+    final response = await _client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
         'email': email,
         'password': password,
         'full_name': fullName,
-      },
+      }),
     );
 
-    final data = response.data!;
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw HttpException(response.statusCode, response.body);
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     return AuthSession(
       tokens: AuthTokens(
         access: data['access'] as String,
@@ -53,21 +70,34 @@ class AuthRepository {
   }
 
   Future<void> signOut({required String accessToken, required String refreshToken}) async {
-    await _dio.post(
-      '/auth/signout/',
-      data: {'refresh': refreshToken},
-      options: Options(
-        headers: {'Authorization': 'Bearer $accessToken'},
-      ),
+    final url = Uri.parse('$_apiBase/auth/signout/');
+    final response = await _client.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode({'refresh': refreshToken}),
     );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw HttpException(response.statusCode, response.body);
+    }
   }
 
   Future<AuthTokens> refresh({required String refreshToken}) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/auth/refresh/',
-      data: {'refresh': refreshToken},
+    final url = Uri.parse('$_apiBase/auth/refresh/');
+    final response = await _client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'refresh': refreshToken}),
     );
-    final data = response.data!;
+
+    if (response.statusCode != 200) {
+      throw HttpException(response.statusCode, response.body);
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     return AuthTokens(
       access: data['access'] as String,
       refresh: data['refresh'] as String,
@@ -75,16 +105,32 @@ class AuthRepository {
   }
 
   Future<UserProfile> me({required String accessToken}) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/auth/me/',
-      options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+    final url = Uri.parse('$_apiBase/auth/me/');
+    final response = await _client.get(
+      url,
+      headers: {'Authorization': 'Bearer $accessToken'},
     );
 
-    return UserProfile.fromJson(response.data!);
+    if (response.statusCode != 200) {
+      throw HttpException(response.statusCode, response.body);
+    }
+
+    return UserProfile.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 }
 
+class HttpException implements Exception {
+  HttpException(this.statusCode, this.body);
+
+  final int statusCode;
+  final String body;
+
+  @override
+  String toString() => 'HttpException: $statusCode - $body';
+}
+
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final dio = ref.watch(dioProvider);
-  return AuthRepository(dio);
+  final client = ref.watch(httpClientProvider);
+  final baseUrl = ref.watch(apiBaseUrlProvider);
+  return AuthRepository(client, baseUrl);
 });
