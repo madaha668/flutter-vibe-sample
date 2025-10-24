@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../application/auth_controller.dart';
+import 'backend_url_dialog.dart';
 import 'sign_up_page.dart';
 
 class SignInPage extends ConsumerStatefulWidget {
@@ -95,7 +96,21 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     final errorMessage = authState.errorMessage;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign in')),
+      appBar: AppBar(
+        title: const Text('Sign in'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Configure Backend',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => const BackendUrlDialog(),
+              );
+            },
+          ),
+        ],
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),

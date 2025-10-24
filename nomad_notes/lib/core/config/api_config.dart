@@ -1,20 +1,7 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// Provides the base URL for the backend API depending on the current platform.
+/// Backend URL configuration
 ///
-/// Default network configuration:
-/// - All platforms now connect to backend at 10.0.56.2:8000
+/// Default: http://192.168.66.238:8000
+/// - Can be changed via Settings dialog in the sign-in page
+/// - URL is persisted in secure storage
 /// - Override with: flutter run --dart-define=NOMAD_API_URL=http://your-ip:8000
-final apiBaseUrlProvider = Provider<String>((ref) {
-  // Check for environment override first
-  const envUrl = String.fromEnvironment('NOMAD_API_URL');
-  if (envUrl.isNotEmpty) {
-    return envUrl;
-  }
-
-  // Default to network backend server
-  return 'http://192.168.66.238:8000';
-});
+export 'backend_url_controller.dart';
