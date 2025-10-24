@@ -67,7 +67,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
           break;
         } else if (event.error != null) {
           setState(() {
-            _pingStatus = 'Network error: ${event.error?.error ?? 'Unknown'}';
+            _pingStatus = 'Network error: ${event.error ?? 'Unknown'}';
           });
         }
       }
